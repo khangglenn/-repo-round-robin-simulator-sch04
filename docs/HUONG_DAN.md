@@ -27,8 +27,8 @@ Không cần cài thêm thư viện gì.
 |---|---|---|---|
 | Tiến | `src/rr_engine.py` | `src/main.py` | Tự viết hàm `simulate_round_robin` với `compare_quanta` theo 6 bước trong mục thuật toán, tự thêm file CSV mẫu vào `input/`, rồi viết test đối chiếu |
 | Triết | `src/main.py` | `src/rr_engine.py` | Chạy GUI trên Windows, chụp màn hình đưa vào báo cáo |
-| Long Vũ | Nút Compare trong app, hàm `compare_quanta` | Logic chạy trong `simulate_round_robin` | Lấy bảng so sánh nhiều quantum để vẽ biểu đồ, phân tích |
-| Hải Đăng | Bảng Compare trong app, số liệu từ nhóm | Code trong `src/` | Lấy số liệu, hình Gantt làm báo cáo, slide |
+| Long Vũ | File `src/charts.py` mới (tự viết) | Logic chạy trong `simulate_round_robin` | Viết code vẽ biểu đồ so sánh quantum, xuất hình cho báo cáo |
+| Hải Đăng | File `src/export.py` mới (tự viết) + báo cáo, slide | Code engine với giao diện của Tiến với Triết | Viết code xuất bảng kết quả với trace chi tiết, rồi làm báo cáo, slide |
 
 ## Thuật toán nói bằng tiếng người
 
