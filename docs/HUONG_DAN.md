@@ -16,15 +16,16 @@ các con số này đổi ra sao.
 python src/main.py
 ```
 
-3. App mở sẵn dữ liệu mẫu. Thuật toán đang chờ Tiến viết nên bấm RUN
-   sẽ hiện thông báo chờ, sau khi Tiến viết xong thì bấm RUN là thấy Gantt.
+3. App mở sẵn 2 tiến trình mặc định. Thuật toán đang chờ Tiến viết nên
+   bấm RUN sẽ hiện thông báo chờ, sau khi Tiến viết xong thì bấm RUN là
+   thấy Gantt.
 Không cần cài thêm thư viện gì.
 
 ## Ai mở file nào — chỉ sửa phần mình, đừng đụng phần người khác
 
 | Người | Mở file này | Đừng đụng vào | Việc đầu tiên |
 |---|---|---|---|
-| Tiến | `src/rr_engine.py` | `src/main.py` | Tự viết hàm `simulate_round_robin` với `compare_quanta` theo 6 bước trong mục thuật toán, rồi viết test đối chiếu |
+| Tiến | `src/rr_engine.py` | `src/main.py` | Tự viết hàm `simulate_round_robin` với `compare_quanta` theo 6 bước trong mục thuật toán, tự thêm file CSV mẫu vào `input/`, rồi viết test đối chiếu |
 | Triết | `src/main.py` | `src/rr_engine.py` | Chạy GUI trên Windows, chụp màn hình đưa vào báo cáo |
 | Long Vũ | Nút Compare trong app, hàm `compare_quanta` | Logic chạy trong `simulate_round_robin` | Lấy bảng so sánh nhiều quantum để vẽ biểu đồ, phân tích |
 | Hải Đăng | Bảng Compare trong app, số liệu từ nhóm | Code trong `src/` | Lấy số liệu, hình Gantt làm báo cáo, slide |
