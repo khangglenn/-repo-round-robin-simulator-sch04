@@ -1,159 +1,187 @@
-"""Round Robin CPU scheduling simulation engine.
-
-Pure logic with no GUI imports: the GUI (main.py), tests and the report
-tooling all use this module. Implements topic OS_SCH_04 — Round Robin
-and the effect of the time quantum (ready queue, context switches,
-response / waiting / turnaround analysis, switch overhead).
-"""
-from __future__ import annotations
-
-# THUẬT TOÁN BẰNG TIẾNG VIỆT (đọc trước khi sửa file này):
-# 1. Xếp tiến trình theo thời gian đến (arrival), đến cùng lúc thì theo pid.
-# 2. Lấy tiến trình đầu hàng ra, cho chạy tối đa `quantum` (còn ít hơn
-#    quantum thì chạy hết phần còn lại rồi kết thúc luôn).
-# 3. Trong lúc chạy, tiến trình nào đến mới thì xếp vào cuối hàng.
-# 4. Hết một lát mà chưa chạy xong thì xếp lại cuối hàng.
-# 5. Đổi sang tiến trình khác thì đếm 1 lần context switch; nếu
-#    context_switch_time > 0 thì cộng thêm đoạn CS vào Gantt.
-# 6. Hàng rỗng mà vẫn còn tiến trình chưa đến thì CPU IDLE tới lúc nó đến.
-# Kết quả trả về: segments (để vẽ Gantt) + waiting / turnaround / response
-# của từng tiến trình. File này chỉ có logic, không có giao diện.
+# Mo phong lap lich CPU Round Robin
+# De tai OS_SCH_04: Round Robin va anh huong cua time quantum
+# File nay chi co logic tinh toan, khong co giao dien.
+# Giao dien nam o file main.py cung thu muc.
 
 import csv
-from collections import deque
-from dataclasses import dataclass
 
 
-@dataclass
 class Process:
-    pid: str
-    arrival: int
-    burst: int
+    # Mot tien trinh: ten, gio toi, tong thoi gian can chay
+    def __init__(self, pid, arrival, burst):
+        self.pid = pid
+        self.arrival = arrival
+        self.burst = burst
 
 
-@dataclass
 class Segment:
-    """One bar on the Gantt chart. pid "IDLE" = CPU idle, "CS" = context switch."""
-    pid: str
-    start: int
-    end: int
+    # Mot doan tren bieu do Gantt: ai chay, tu gio nao den gio nao
+    # pid = "IDLE": CPU dang ranh, pid = "CS": dang doi nguoi
+    def __init__(self, pid, start, end):
+        self.pid = pid
+        self.start = start
+        self.end = end
 
 
-@dataclass
 class ProcessResult:
-    pid: str
-    arrival: int
-    burst: int
-    completion: int
-    turnaround: int  # completion - arrival
-    waiting: int     # turnaround - burst
-    response: int    # first time the process gets the CPU - arrival
+    # Ket qua cua mot tien trinh
+    def __init__(self, pid, arrival, burst, completion,
+                 turnaround, waiting, response):
+        self.pid = pid
+        self.arrival = arrival
+        self.burst = burst
+        self.completion = completion
+        self.turnaround = turnaround
+        self.waiting = waiting
+        self.response = response
 
 
-@dataclass
 class SimulationResult:
-    quantum: int
-    context_switch_time: int
-    segments: list[Segment]
-    per_process: list[ProcessResult]
-    avg_waiting: float
-    avg_turnaround: float
-    avg_response: float
-    context_switches: int
-    overhead_time: int  # total time spent switching context
-    total_time: int     # makespan = last completion time
+    # Ket qua cua ca phien mo phong
+    def __init__(self, quantum, context_switch_time, segments, per_process,
+                 avg_waiting, avg_turnaround, avg_response,
+                 context_switches, overhead_time, total_time):
+        self.quantum = quantum
+        self.context_switch_time = context_switch_time
+        self.segments = segments
+        self.per_process = per_process
+        self.avg_waiting = avg_waiting
+        self.avg_turnaround = avg_turnaround
+        self.avg_response = avg_response
+        self.context_switches = context_switches
+        self.overhead_time = overhead_time
+        self.total_time = total_time
+
+
+def dua_tien_trinh_moi_vao_hang(procs, idx, time, queue):
+    # Dua nhung tien trinh da toi (arrival <= time) vao cuoi hang doi.
+    # Tra ve idx moi (chi so tien trinh tiep theo chua vao hang).
+    while idx < len(procs) and procs[idx].arrival <= time:
+        queue.append(procs[idx])
+        idx = idx + 1
+    return idx
 
 
 def simulate_round_robin(processes, quantum, context_switch_time=0):
-    """Run Round Robin. context_switch_time is the cost of one switch
-    (0 = idealised model used in class)."""
+    # Chay thuat toan Round Robin.
+    # processes: danh sach Process
+    # quantum: thoi gian moi luot chay
+    # context_switch_time: thoi gian doi nguoi (0 = mo hinh ly tuong tren lop)
     if quantum <= 0:
-        raise ValueError("time quantum must be positive")
-    if not processes:
-        raise ValueError("process list is empty")
+        raise ValueError("quantum phai lon hon 0")
+    if len(processes) == 0:
+        raise ValueError("danh sach tien trinh rong")
 
+    # Buoc 1: xep tien trinh theo gio toi, toi cung luc thi theo ten
     procs = sorted(processes, key=lambda p: (p.arrival, p.pid))
-    remaining = {p.pid: p.burst for p in procs}
-    first_start, completion = {}, {}
-    segments: list[Segment] = []
 
-    def push(pid, start, end):
+    # remaining: moi tien trinh con lai bao nhieu thoi gian chua chay
+    remaining = {}
+    for p in procs:
+        remaining[p.pid] = p.burst
+    first_start = {}  # lan dau tien moi tien trinh duoc chay
+    completion = {}   # gio hoan thanh cua moi tien trinh
+    segments = []     # cac doan de ve bieu do Gantt
+    time = 0          # dong ho hien tai
+    idx = 0           # chi so tien trinh tiep theo chua vao hang
+    queue = []        # hang doi san sang
+    switches = 0      # so lan doi nguoi
+    overhead = 0      # tong thoi gian doi nguoi
+    last_pid = None   # tien trinh vua chay truoc do
+
+    def them_doan(pid, start, end):
+        # Them mot doan vao Gantt. Neu doan moi noi tiep doan cu cung ten
+        # thi gop lai thanh mot doan cho dep.
         if end <= start:
             return
-        if segments and segments[-1].pid == pid and segments[-1].end == start:
-            segments[-1].end = end
-        else:
-            segments.append(Segment(pid, start, end))
+        if len(segments) > 0:
+            last = segments[len(segments) - 1]
+            if last.pid == pid and last.end == start:
+                last.end = end
+                return
+        segments.append(Segment(pid, start, end))
 
-    time = 0
-    idx = 0
-    n = len(procs)
-    queue: deque[Process] = deque()
-    switches = 0
-    overhead = 0
-    last_pid = None
+    # Dua nhung tien trinh toi dau tien vao hang
+    idx = dua_tien_trinh_moi_vao_hang(procs, idx, time, queue)
 
-    def enqueue_arrivals():
-        nonlocal idx
-        while idx < n and procs[idx].arrival <= time:
-            queue.append(procs[idx])
-            idx += 1
-
-    enqueue_arrivals()
-    while queue or idx < n:
-        if not queue:  # CPU idle until the next process arrives
+    # Lap cho toi khi hang rong va khong con tien trinh nao chua toi
+    while len(queue) > 0 or idx < len(procs):
+        if len(queue) == 0:
+            # Hang rong: CPU ranh, nhay toi gio tien trinh tiep theo toi
             nxt = procs[idx].arrival
-            push("IDLE", time, nxt)
+            them_doan("IDLE", time, nxt)
             time = nxt
-            enqueue_arrivals()
+            idx = dua_tien_trinh_moi_vao_hang(procs, idx, time, queue)
             continue
 
-        p = queue.popleft()
-        if last_pid is not None and last_pid != p.pid:
-            switches += 1
-            if context_switch_time > 0:
-                push("CS", time, time + context_switch_time)
-                overhead += context_switch_time
-                time += context_switch_time
+        # Lay tien trinh dau hang ra chay
+        p = queue.pop(0)
 
+        # Doi nguoi thi dem 1 lan, co chi phi thi cong them thoi gian
+        if last_pid is not None and last_pid != p.pid:
+            switches = switches + 1
+            if context_switch_time > 0:
+                them_doan("CS", time, time + context_switch_time)
+                overhead = overhead + context_switch_time
+                time = time + context_switch_time
+
+        # Ghi nhan lan dau tien tien trinh nay duoc chay
         if p.pid not in first_start:
             first_start[p.pid] = time
 
-        run = min(quantum, remaining[p.pid])
-        push(p.pid, time, time + run)
-        time += run
-        remaining[p.pid] -= run
+        # Chay toi da mot quantum, neu con it hon thi chay het phan con lai
+        run = quantum
+        if remaining[p.pid] < run:
+            run = remaining[p.pid]
+        them_doan(p.pid, time, time + run)
+        time = time + run
+        remaining[p.pid] = remaining[p.pid] - run
         last_pid = p.pid
 
-        enqueue_arrivals()
+        # Trong luc chay, co tien trinh moi toi thi xep vao cuoi hang
+        idx = dua_tien_trinh_moi_vao_hang(procs, idx, time, queue)
+
+        # Chay xong thi ghi gio hoan thanh, chua xong thi ve cuoi hang
         if remaining[p.pid] > 0:
             queue.append(p)
         else:
             completion[p.pid] = time
 
+    # Tinh ket qua cho tung tien trinh, giu nguyen thu tu file dau vao
     per_process = []
-    for p in processes:  # report table keeps the input order
+    for p in processes:
         comp = completion[p.pid]
         tat = comp - p.arrival
-        per_process.append(ProcessResult(
-            pid=p.pid, arrival=p.arrival, burst=p.burst, completion=comp,
-            turnaround=tat, waiting=tat - p.burst,
-            response=first_start[p.pid] - p.arrival))
+        wait = tat - p.burst
+        resp = first_start[p.pid] - p.arrival
+        per_process.append(ProcessResult(p.pid, p.arrival, p.burst,
+                                         comp, tat, wait, resp))
 
-    m = len(per_process)
-    return SimulationResult(
-        quantum=quantum, context_switch_time=context_switch_time,
-        segments=segments, per_process=per_process,
-        avg_waiting=sum(r.waiting for r in per_process) / m,
-        avg_turnaround=sum(r.turnaround for r in per_process) / m,
-        avg_response=sum(r.response for r in per_process) / m,
-        context_switches=switches, overhead_time=overhead,
-        total_time=max(completion.values()))
+    # Tinh cac gia tri trung binh
+    tong_wait = 0
+    tong_tat = 0
+    tong_resp = 0
+    for r in per_process:
+        tong_wait = tong_wait + r.waiting
+        tong_tat = tong_tat + r.turnaround
+        tong_resp = tong_resp + r.response
+    n = len(per_process)
+
+    # Tong thoi gian chay = gio hoan thanh muon nhat
+    total = 0
+    for pid in completion:
+        if completion[pid] > total:
+            total = completion[pid]
+
+    return SimulationResult(quantum, context_switch_time, segments,
+                            per_process,
+                            tong_wait / n, tong_tat / n, tong_resp / n,
+                            switches, overhead, total)
 
 
 def compare_quanta(processes, quanta, context_switch_time=0):
-    """Run the same workload under several quanta and tabulate the metrics —
-    the core analysis of topic OS_SCH_04."""
+    # Chay cung mot bo du lieu voi nhieu quantum khac nhau, tra ve bang
+    # so sanh. Day la phan phan tich chinh cua de tai.
     rows = []
     for q in quanta:
         r = simulate_round_robin(processes, q, context_switch_time)
@@ -170,18 +198,24 @@ def compare_quanta(processes, quanta, context_switch_time=0):
 
 
 def load_processes_csv(path):
-    """Input CSV format: pid,arrival,burst (one process per row)."""
+    # Doc file CSV dau vao. Dinh dang: pid,arrival,burst (moi dong 1 tien trinh)
+    result = []
     with open(path, newline="", encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
-    return [Process(r["pid"].strip(), int(r["arrival"]), int(r["burst"]))
-            for r in rows if r.get("pid")]
+        reader = csv.DictReader(f)
+        for row in reader:
+            if row.get("pid"):
+                result.append(Process(row["pid"].strip(),
+                                      int(row["arrival"]),
+                                      int(row["burst"])))
+    return result
 
 
-def save_results_csv(path, result: SimulationResult):
+def save_results_csv(path, result):
+    # Ghi bang ket qua ra file CSV
     with open(path, "w", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
-        w.writerow(["pid", "arrival", "burst", "completion",
-                    "turnaround", "waiting", "response"])
+        writer = csv.writer(f)
+        writer.writerow(["pid", "arrival", "burst", "completion",
+                         "turnaround", "waiting", "response"])
         for r in result.per_process:
-            w.writerow([r.pid, r.arrival, r.burst, r.completion,
-                        r.turnaround, r.waiting, r.response])
+            writer.writerow([r.pid, r.arrival, r.burst, r.completion,
+                             r.turnaround, r.waiting, r.response])
