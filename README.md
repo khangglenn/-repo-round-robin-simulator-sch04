@@ -1,8 +1,8 @@
-# Round Robin Simulator — OS_SCH_04
+ Round Robin Simulator — OS_SCH_04
 
-Nhóm OS_2627102_01 — Hạn nộp: Thứ Hai 09/11/2026 23:59
+Nhóm OS_2627102_01
 
-## Phân công công việc
+ Phân công công việc
 
 | # | Thành viên | Phần việc | Bàn giao |
 |---|------------|-----------|----------|
@@ -13,5 +13,3 @@ Nhóm OS_2627102_01 — Hạn nộp: Thứ Hai 09/11/2026 23:59
 | 5 | Lê Hiền Hải Đăng | Báo cáo Word, bảng kiểm thử, PowerPoint, kịch bản video | Báo cáo, slide, kịch bản video |
 
 Video báo cáo: mỗi người tự quay phần mình, phải hiện mặt.
-
-Chi tiết đầy đủ xem `docs/PHAN_CONG.md`. Hướng dẫn dùng khung xem `docs/HUONG_DAN.md`.
