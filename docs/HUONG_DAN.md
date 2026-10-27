@@ -16,14 +16,15 @@ các con số này đổi ra sao.
 python src/main.py
 ```
 
-3. App mở sẵn dữ liệu mẫu, bấm RUN SIMULATION là thấy Gantt.
+3. App mở sẵn dữ liệu mẫu. Thuật toán đang chờ Tiến viết nên bấm RUN
+   sẽ hiện thông báo chờ, sau khi Tiến viết xong thì bấm RUN là thấy Gantt.
 Không cần cài thêm thư viện gì.
 
 ## Ai mở file nào — chỉ sửa phần mình, đừng đụng phần người khác
 
 | Người | Mở file này | Đừng đụng vào | Việc đầu tiên |
 |---|---|---|---|
-| Tiến | `src/rr_engine.py` | `src/main.py` | Đọc hàm `simulate_round_robin`, viết thêm test nếu cần |
+| Tiến | `src/rr_engine.py` | `src/main.py` | Tự viết hàm `simulate_round_robin` với `compare_quanta` theo 6 bước trong mục thuật toán, rồi viết test đối chiếu |
 | Triết | `src/main.py` | `src/rr_engine.py` | Chạy GUI trên Windows, chụp màn hình đưa vào báo cáo |
 | Long Vũ | Nút Compare trong app, hàm `compare_quanta` | Logic chạy trong `simulate_round_robin` | Lấy bảng so sánh nhiều quantum để vẽ biểu đồ, phân tích |
 | Hải Đăng | Bảng Compare trong app, số liệu từ nhóm | Code trong `src/` | Lấy số liệu, hình Gantt làm báo cáo, slide |
@@ -43,7 +44,7 @@ quantum rồi về cuối hàng, cứ thế cho tới khi xong hết.
 6. Hàng rỗng mà vẫn còn tiến trình chưa đến thì CPU ngồi chơi (IDLE)
    tới lúc tiến trình tiếp theo đến.
 
-## Ví dụ chạy tay — đối chiếu với app
+## Ví dụ chạy tay — kết quả đúng mà code của Tiến phải cho ra
 
 P1 (đến 0, chạy 5), P2 (đến 1, chạy 3), P3 (đến 2, chạy 1), quantum 2,
 không tính chi phí chuyển ngữ cảnh:
@@ -56,8 +57,8 @@ không tính chi phí chuyển ngữ cảnh:
 - 8–9: P1 chạy xong.
 
 Kết quả: P1 chờ 4, P2 chờ 4, P3 chờ 2; đổi người 5 lần.
-Mở app, nhập đúng 3 dòng này, quantum 2, bấm RUN mà ra đúng bảng này
-thì code đang đúng. Ra khác là code sai, báo nhóm trưởng.
+Sau khi Tiến viết xong, mở app, nhập đúng 3 dòng này, quantum 2, bấm RUN
+mà ra đúng bảng này thì code đúng. Ra khác là code sai, báo nhóm trưởng.
 
 ## Nộp bài lên GitHub — mỗi người, mỗi ngày
 

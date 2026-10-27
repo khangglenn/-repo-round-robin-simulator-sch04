@@ -183,12 +183,18 @@ class App(tk.Tk):
 
     # ---------- Mo phong ----------
     def run(self):
-        # Chay mo phong voi quantum va thoi gian doi nguoi dang chon
+        # Chay mo phong voi quantum va thoi gian doi nguoi dang chon.
+        # Thuat toan chua viet xong thi bao cho nguoi dung biet, khong crash.
         if len(self.processes) == 0:
             messagebox.showinfo("No processes", "Add at least one process.")
             return
-        r = simulate_round_robin(self.processes, self.var_q.get(),
-                                 self.var_cs.get())
+        try:
+            r = simulate_round_robin(self.processes, self.var_q.get(),
+                                     self.var_cs.get())
+        except NotImplementedError:
+            messagebox.showinfo("Chua viet xong",
+                                "Phan thuat toan dang cho Tien viet xong.")
+            return
         self.last_result = r
         # Dien bang ket qua tung tien trinh
         self.results.delete(*self.results.get_children())
@@ -249,7 +255,12 @@ class App(tk.Tk):
         except ValueError:
             messagebox.showerror("Invalid list", "Example: 1, 2, 3, 4, 5")
             return
-        rows = compare_quanta(self.processes, quanta, self.var_cs.get())
+        try:
+            rows = compare_quanta(self.processes, quanta, self.var_cs.get())
+        except NotImplementedError:
+            messagebox.showinfo("Chua viet xong",
+                                "Phan thuat toan dang cho Tien viet xong.")
+            return
         self.compare_table.delete(*self.compare_table.get_children())
         for row in rows:
             self.compare_table.insert("", "end", values=(
