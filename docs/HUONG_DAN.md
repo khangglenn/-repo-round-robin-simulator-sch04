@@ -25,10 +25,11 @@ Không cần cài thêm thư viện gì.
 
 | Người | Mở file này | Đừng đụng vào | Việc đầu tiên |
 |---|---|---|---|
+| Khang (nhóm trưởng) | Báo cáo Word, PowerPoint, video, file .7z | Code của 4 người (chỉ gộp khi review, không sửa bừa) | Viết báo cáo, slide, dựng video, đóng gói, nộp bài |
 | Tiến | `src/rr_engine.py` | `src/main.py` | Tự viết hàm `simulate_round_robin` với `compare_quanta` theo 6 bước trong mục thuật toán, tự thêm file CSV mẫu vào `input/`, rồi viết test đối chiếu |
 | Triết | `src/main.py` | `src/rr_engine.py` | Chạy GUI trên Windows, chụp màn hình đưa vào báo cáo |
 | Long Vũ | File `src/charts.py` mới (tự viết) | Logic chạy trong `simulate_round_robin` | Viết code vẽ biểu đồ so sánh quantum, xuất hình cho báo cáo |
-| Hải Đăng | File `src/export.py` mới (tự viết) + báo cáo, slide | Code engine với giao diện của Tiến với Triết | Viết code xuất bảng kết quả với trace chi tiết, rồi làm báo cáo, slide |
+| Hải Đăng | File `src/export.py` mới (tự viết) | Code engine với giao diện của Tiến với Triết | Viết code xuất bảng kết quả với trace chi tiết |
 
 ## Thuật toán nói bằng tiếng người
 
