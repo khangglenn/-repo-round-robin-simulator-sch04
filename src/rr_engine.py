@@ -7,6 +7,18 @@ response / waiting / turnaround analysis, switch overhead).
 """
 from __future__ import annotations
 
+# THUẬT TOÁN BẰNG TIẾNG VIỆT (đọc trước khi sửa file này):
+# 1. Xếp tiến trình theo thời gian đến (arrival), đến cùng lúc thì theo pid.
+# 2. Lấy tiến trình đầu hàng ra, cho chạy tối đa `quantum` (còn ít hơn
+#    quantum thì chạy hết phần còn lại rồi kết thúc luôn).
+# 3. Trong lúc chạy, tiến trình nào đến mới thì xếp vào cuối hàng.
+# 4. Hết một lát mà chưa chạy xong thì xếp lại cuối hàng.
+# 5. Đổi sang tiến trình khác thì đếm 1 lần context switch; nếu
+#    context_switch_time > 0 thì cộng thêm đoạn CS vào Gantt.
+# 6. Hàng rỗng mà vẫn còn tiến trình chưa đến thì CPU IDLE tới lúc nó đến.
+# Kết quả trả về: segments (để vẽ Gantt) + waiting / turnaround / response
+# của từng tiến trình. File này chỉ có logic, không có giao diện.
+
 import csv
 from collections import deque
 from dataclasses import dataclass
