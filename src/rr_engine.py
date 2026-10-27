@@ -24,7 +24,6 @@ def simulate_round_robin(processes, quantum, context_switch=0):
             "Phan CS (context_switch > 0) de phan 2/3, "
             "phan 1/3 chi chay voi context_switch = 0.")
 
-    # Buoc 1: xep theo gio den; den cung gio giu dung thu tu trong file
     # (ham sorted cua Python la stable).
     sap_xep = sorted(processes, key=lambda proc: proc["arrival"])
     con_lai = {proc["pid"]: proc["burst"] for proc in sap_xep}
@@ -38,13 +37,11 @@ def simulate_round_robin(processes, quantum, context_switch=0):
     n = len(sap_xep)
 
     while len(hoan_thanh) < n:
-        # Buoc 3: tien trinh nao den kip thi xep vao cuoi hang.
         while chi_so < n and sap_xep[chi_so]["arrival"] <= t:
             hang_doi.append(sap_xep[chi_so])
             chi_so += 1
 
         if not hang_doi:
-            # Buoc 4: khong con ai trong hang nhung van con tien trinh
             # chua den -> CPU ranh cho den gio tien trinh tiep theo den.
             gio_toi = sap_xep[chi_so]["arrival"]
             segments.append({"pid": "IDLE", "start": t, "end": gio_toi})
@@ -56,13 +53,11 @@ def simulate_round_robin(processes, quantum, context_switch=0):
         if pid not in lan_dau:
             lan_dau[pid] = t
 
-        # Buoc 2: chay toi da bang quantum.
         chay = min(quantum, con_lai[pid])
         segments.append({"pid": pid, "start": t, "end": t + chay})
         t += chay
         con_lai[pid] -= chay
 
-        # Buoc 3 (tiep): tien trinh den trong luc chay thi xep vao cuoi hang.
         while chi_so < n and sap_xep[chi_so]["arrival"] <= t:
             hang_doi.append(sap_xep[chi_so])
             chi_so += 1
@@ -91,3 +86,16 @@ def simulate_round_robin(processes, quantum, context_switch=0):
     return {"segments": segments, "results": results}
 
 
+if __name__ == "__main__":
+    # Demo vi du muc 4.2 trong HUONG_DAN: P1(0,5), P2(1,3), P3(2,1), quantum 2.
+    # waiting P1 = 4, P2 = 4, P3 = 2.
+    vd = [{"pid": "P1", "arrival": 0, "burst": 5},
+          {"pid": "P2", "arrival": 1, "burst": 3},
+          {"pid": "P3", "arrival": 2, "burst": 1}]
+    kq = simulate_round_robin(vd, 2)
+    for s in kq["segments"]:
+        print(f"{s['pid']}: {s['start']}–{s['end']}")
+    for r in kq["results"]:
+        print(f"{r['pid']}: completion={r['completion']}, "
+              f"turnaround={r['turnaround']}, waiting={r['waiting']}, "
+              f"response={r['response']}")
