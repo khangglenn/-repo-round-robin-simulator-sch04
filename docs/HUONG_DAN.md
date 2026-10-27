@@ -26,7 +26,7 @@ Không cần cài thêm thư viện gì.
 | Tiến | `src/rr_engine.py` | `src/main.py` | Đọc hàm `simulate_round_robin`, viết thêm test nếu cần |
 | Triết | `src/main.py` | `src/rr_engine.py` | Chạy GUI trên Windows, chụp màn hình đưa vào báo cáo |
 | Long Vũ | Nút Compare trong app, hàm `compare_quanta` | Logic chạy trong `simulate_round_robin` | Lấy bảng so sánh nhiều quantum để vẽ biểu đồ, phân tích |
-| Hải Đăng | Thư mục `docs/`, bảng Compare trong app | Code trong `src/` | Lấy số liệu, hình Gantt làm báo cáo, slide |
+| Hải Đăng | Bảng Compare trong app, số liệu từ nhóm | Code trong `src/` | Lấy số liệu, hình Gantt làm báo cáo, slide |
 
 ## Thuật toán nói bằng tiếng người
 
