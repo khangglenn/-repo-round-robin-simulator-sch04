@@ -16,9 +16,10 @@ def ve_bieu_do_so_sanh(rows, parent=None):
     root.title("Biểu đồ so sánh Round Robin.")
 
     configs = [
-        ("1. THỜI GIAN CHỜ TRUNG BÌNH THEO QUANTUM", "avg_waiting", "(Thời gian)", "skyblue", "bieu_do_cho_trung_binh.eps"),
-        ("2. THỜI GIAN ĐÁP ỨNG TRUNG BÌNH THEO QUANTUM", "avg_response", "(Thời gian)", "lightgreen", "bieu_do_dap_ung_trung_binh.eps"),
-        ("3. SỐ LẦN CHUYỂN NGỮ CẢNH THEO QUANTUM", "context_switches", "(Số lần)", "orange", "bieu_do_chuyen_ngu_canh.eps")
+        ("1. THỜI GIAN CHỜ TRUNG BÌNH THEO QUANTUM", "avg_waiting", "(Thời gian)", "#3498db", "bieu_do_cho.eps"),
+        ("2. THỜI GIAN HOÀN THÀNH TRUNG BÌNH THEO QUANTUM", "avg_turnaround", "(Thời gian)", "#9b59b6", "bieu_do_hoan_thanh.eps"),
+        ("3. THỜI GIAN ĐÁP ỨNG TRUNG BÌNH THEO QUANTUM", "avg_response", "(Thời gian)", "#2ecc71", "bieu_do_dap_ung.eps"),
+        ("4. SỐ LẦN CHUYỂN NGỮ CẢNH THEO QUANTUM", "context_switches", "(Số lần)", "#e67e22", "bieu_do_chuyen_ngu_canh.eps")
     ]
 
     for title, key, y_label, color, filename in configs:
@@ -70,13 +71,24 @@ def ve_bieu_do_so_sanh(rows, parent=None):
         print(f"Đã xuất biểu đồ ra file: {output_path}") #xuất file về thư mục
 
 if __name__ == "__main__":
-    fake_data = [
-        {"quantum": 1, "avg_waiting": 5.5, "avg_response": 1.5, "context_switches": 10},
-        {"quantum": 2, "avg_waiting": 4.0, "avg_response": 2.0, "context_switches": 5},
-        {"quantum": 5, "avg_waiting": 3.0, "avg_response": 3.0, "context_switches": 2}
-    ]
+    try:
+        from rr_engine import compare_quanta
+        test_processes = [
+            {"pid": "P1", "arrival": 0, "burst": 5},
+            {"pid": "P2", "arrival": 1, "burst": 3},
+            {"pid": "P3", "arrival": 2, "burst": 1}
+        ]
+        real_data = compare_quanta(test_processes, [1, 2, 5, 10], context_switch=0)
+        print("Chay test voi rr_engine ok")
+    except Exception:
+        print("Khong goi duoc rr_engine, dung fake data de test")
+        real_data = [
+            {"quantum": 1, "avg_waiting": 5.5, "avg_turnaround": 8.5, "avg_response": 1.5, "context_switches": 10},
+            {"quantum": 2, "avg_waiting": 4.0, "avg_turnaround": 7.0, "avg_response": 2.0, "context_switches": 5},
+            {"quantum": 5, "avg_waiting": 3.0, "avg_turnaround": 6.0, "avg_response": 3.0, "context_switches": 2}
+        ]
 
     test_root = tk.Tk()
     test_root.withdraw()
-    ve_bieu_do_so_sanh(fake_data, parent=test_root)
+    ve_bieu_do_so_sanh(real_data, parent=test_root)
     test_root.mainloop()
