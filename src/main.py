@@ -6,9 +6,13 @@ import csv
 import os
 
 try:
-    from rr_engine import simulate_round_robin, compare_quanta
+    from rr_engine import simulate_round_robin
 except ImportError:
     simulate_round_robin = None
+
+try:
+    from rr_engine import compare_quanta
+except ImportError:
     compare_quanta = None
 
 try:
@@ -29,7 +33,7 @@ root.minsize(700, 600)
 
 processes_list = []
 
-Label(root, text="THUẬT TOÁN ROUND ROBIN", fg="red", font=("Cambria", 14, "bold")).grid(row=0, column=0, columnspan=3, pady=10)
+Label(root, text="THUẬT TOÁN ROUND ROBIN", fg="blue", font=("Cambria", 14, "bold")).grid(row=0, column=0, columnspan=3, pady=10)
 
 Label(root, text="PID :").grid(row=1, column=0, sticky=W, padx=10, pady=2)
 e_pid = Entry(root, width=20)
@@ -60,7 +64,7 @@ def add_process():
         if arrival < 0 or burst <= 0:
             raise ValueError
     except ValueError:
-        messagebox.showerror("Lỗi","Arrival >= 0 và Burst > 0 !")
+        messagebox.showerror("Lỗi", "Yêu cầu: Arrival >= 0 và Burst > 0 (số nguyên)!")
         return
         
     p = {"pid": pid, "arrival": arrival, "burst": burst}
@@ -124,7 +128,7 @@ def run_simulation():
         return
 
     if simulate_round_robin is None:
-        messagebox.showerror("Lỗi", "Chưa tìm thấy file `src/rr_engine.py` của Tiến!")
+        messagebox.showerror("Lỗi", "Chưa tìm thấy hàm `simulate_round_robin` trong `src/rr_engine.py`!")
         return
 
     try:
@@ -147,12 +151,14 @@ def run_compare():
         messagebox.showerror("Lỗi", "Chưa có tiến trình để so sánh!")
         return
     if compare_quanta is None:
-        messagebox.showerror("Lỗi", "Chưa có hàm compare_quanta từ bộ não!")
+        messagebox.showerror("Lỗi", "Chưa tìm thấy hàm `compare_quanta` trong `src/rr_engine.py`!")
         return
+    
     quanta = [1, 2, 4, 8]
     try:
         cs = int(e_cs.get().strip())
         rows = compare_quanta(processes_list, quanta, cs)
+        
         txt_result.delete("1.0", END)
         txt_result.insert(END, "=== SO SÁNH CÁC QUANTUM ===\n")
         for r in rows:
@@ -160,13 +166,15 @@ def run_compare():
         
         if ve_bieu_do_so_sanh is not None:
             ve_bieu_do_so_sanh(rows)
-            messagebox.showinfo("Thành công", "Đã vẽ và lưu biểu đồ so sánh thành công!")
+            messagebox.showinfo("Thành công", "Đã gọi hàm vẽ biểu đồ so sánh thành công!")
+        else:
+            messagebox.showwarning("Cảnh báo", "Đã tính toán xong nhưng chưa tìm thấy module `charts.py` để vẽ biểu đồ!")
     except Exception as e:
         messagebox.showerror("Lỗi", f"Lỗi so sánh: {e}")
 
 def run_export():
     if simulate_round_robin is None:
-        messagebox.showerror("Lỗi", "Chưa có bộ não để xuất file!")
+        messagebox.showerror("Lỗi", "Chưa có hàm `simulate_round_robin` để xuất file!")
         return
     try:
         quantum = int(e_quantum.get().strip())
@@ -178,7 +186,11 @@ def run_export():
             xuat_bang_ket_qua(result, "output/result_table.txt")
         if xuat_trace:
             xuat_trace(result, "output/trace.txt")
-        messagebox.showinfo("Thành công", "Đã xuất kết quả ra thư mục output/ thành công!")
+            
+        if xuat_bang_ket_qua or xuat_trace:
+            messagebox.showinfo("Thành công", "Đã xuất kết quả ra thư mục output/ thành công!")
+        else:
+            messagebox.showwarning("Cảnh báo", "Chưa tìm thấy module `export.py` để xuất file!")
     except Exception as e:
         messagebox.showerror("Lỗi", f"Lỗi xuất file: {e}")
 
