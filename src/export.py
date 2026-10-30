@@ -126,12 +126,12 @@ def xuat_bang_ket_qua(result, path):
     cac_dong += [
         "",
         "Chú thích:",
-        " Arrival = giờ tiến trình đến",
-        " Burst = thời gian tiến trình cần chạy",
-        " Completion = giờ tiến trình chạy xong",
-        " Turnaround = Completion - Arrival",
-        " Waiting = Turnaround - Burst",
-        " Response = giờ được chạy lần đầu - Arrival",
+        "  Arrival    = giờ tiến trình đến",
+        "  Burst      = thời gian tiến trình cần chạy",
+        "  Completion = giờ tiến trình chạy xong",
+        "  Turnaround = Completion - Arrival",
+        "  Waiting    = Turnaround - Burst",
+        "  Response   = giờ được chạy lần đầu - Arrival",
     ]
     return _ghi_file(path, cac_dong)
 
@@ -186,41 +186,58 @@ def xuat_trace(result, path):
     cac_dong += [
         "3. Tổng kết",
         "",
-        f" Thời điểm kết thúc : {_so(cac_doan[-1]['end'])}",
-        f" Thời gian CPU chạy tiến trình : {_so(t_chay)}",
-        f" Thời gian CPU rảnh (IDLE) : {_so(t_idle)}",
-        f" Thời gian đổi lượt (CS) : {_so(t_cs)}",
-        f" Hiệu suất sử dụng CPU : {hieu_suat:.2f}%",
+        f"  Thời điểm kết thúc            : {_so(cac_doan[-1]['end'])}",
+        f"  Thời gian CPU chạy tiến trình : {_so(t_chay)}",
+        f"  Thời gian CPU rảnh (IDLE)     : {_so(t_idle)}",
+        f"  Thời gian đổi lượt (CS)       : {_so(t_cs)}",
+        f"  Hiệu suất sử dụng CPU         : {hieu_suat:.2f}%",
         "",
-        "Ký hiệu: IDLE = CPU rảnh vì chưa có tiến trình nào đến;",
-        " CS = đổi lượt (context switch).",
+        "Ký hiệu:",
+        "  IDLE = CPU rảnh vì chưa có tiến trình nào đến",
+        "  CS   = đổi lượt (context switch)",
     ]
     return _ghi_file(path, cac_dong)
 
 
-if __name__ == "__main__":
-    vi_du_4_2 = {
-        "quantum": 2,
-        "context_switch": 0,
-        "segments": [
-            {"pid": "P1", "start": 0, "end": 2},
-            {"pid": "P2", "start": 2, "end": 4},
-            {"pid": "P3", "start": 4, "end": 5},
-            {"pid": "P1", "start": 5, "end": 7},
-            {"pid": "P2", "start": 7, "end": 8},
-            {"pid": "P1", "start": 8, "end": 9},
-        ],
-        "results": [
-            {"pid": "P1", "arrival": 0, "burst": 5, "completion": 9,
-             "turnaround": 9, "waiting": 4, "response": 0},
-            {"pid": "P2", "arrival": 1, "burst": 3, "completion": 8,
-             "turnaround": 7, "waiting": 4, "response": 1},
-            {"pid": "P3", "arrival": 2, "burst": 1, "completion": 5,
-             "turnaround": 3, "waiting": 2, "response": 2},
-        ],
-    }
+def xuat_ket_qua(result, thu_muc="output", quantum=None, context_switch=None):
+    if isinstance(result, dict):
+        result = dict(result)
+        if quantum is not None:
+            result["quantum"] = quantum
+        if context_switch is not None:
+            result["context_switch"] = context_switch
+    duoi = f"_q{quantum}" if quantum is not None else ""
+    bang = xuat_bang_ket_qua(result, os.path.join(thu_muc, f"bang_ket_qua{duoi}.txt"))
+    trace = xuat_trace(result, os.path.join(thu_muc, f"trace{duoi}.txt"))
+    return bang, trace
 
-    vi_du_idle_cs = {
+
+if __name__ == "__main__":
+    try:
+        from rr_engine import simulate_round_robin
+    except ImportError:
+        simulate_round_robin = None
+
+    vi_du_4_2 = [
+        {"pid": "P1", "arrival": 0, "burst": 5},
+        {"pid": "P2", "arrival": 1, "burst": 3},
+        {"pid": "P3", "arrival": 2, "burst": 1},
+    ]
+    vi_du_idle = [
+        {"pid": "P1", "arrival": 0, "burst": 2},
+        {"pid": "P2", "arrival": 5, "burst": 3},
+    ]
+
+    if simulate_round_robin:
+        print("Chạy với bộ não thật trong rr_engine.py")
+        for p in xuat_ket_qua(simulate_round_robin(vi_du_4_2, 2), quantum=2, context_switch=0):
+            print("Đã ghi:", p)
+        kq_idle = simulate_round_robin(vi_du_idle, 2)
+        print("Đã ghi:", xuat_trace(kq_idle, os.path.join("output", "trace_idle.txt")))
+    else:
+        print("Chưa import được rr_engine.py, bỏ qua phần chạy với bộ não thật")
+
+    vi_du_cs_gia = {
         "quantum": 2,
         "context_switch": 1,
         "segments": [
@@ -241,12 +258,9 @@ if __name__ == "__main__":
              "turnaround": 2, "waiting": 0, "response": 0},
         ],
     }
-
-    print("Đã ghi:", xuat_bang_ket_qua(vi_du_4_2, os.path.join("output", "bang_ket_qua.txt")))
-    print("Đã ghi:", xuat_trace(vi_du_4_2, os.path.join("output", "trace.txt")))
-    print("Đã ghi:", xuat_trace(vi_du_idle_cs, os.path.join("output", "trace_idle_cs.txt")))
+    print("Đã ghi:", xuat_trace(vi_du_cs_gia, os.path.join("output", "trace_cs_gia.txt")))
 
     try:
-        xuat_bang_ket_qua({"segments": [], "results": []}, os.path.join("output", "rong.txt"))
+        xuat_ket_qua({"segments": [], "results": []})
     except ValueError as loi:
         print("Báo lỗi đúng:", loi)
