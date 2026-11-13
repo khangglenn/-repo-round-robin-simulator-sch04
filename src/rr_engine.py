@@ -98,6 +98,45 @@ def simulate_round_robin(processes, quantum, context_switch=0):
         })
 
     return {"segments": segments, "results": results}
+def _thong_ke_doan(segments):
+    """Dem so lan doi luot va lay gio ket thuc tu danh sach segments."""
+    so_lan_doi = 0
+    pid_truoc = None
+    for doan in segments:
+        pid = doan["pid"]
+        if pid == "IDLE":
+            pid_truoc = None
+        elif pid == "CS":
+            continue
+        else:
+            if pid_truoc is not None and pid_truoc != pid:
+                so_lan_doi += 1
+            pid_truoc = pid
+    total = segments[-1]["end"] if segments else 0
+    return so_lan_doi, total
+  
+
+
+def compare_quanta(processes, quanta, context_switch=0):
+    """Chay lai thuat toan voi tung quantum, tra ve mot dict moi quantum."""
+    rows = []
+    for q in quanta:
+        ket_qua = simulate_round_robin(processes, q, context_switch)
+        results = ket_qua["results"]
+        n = len(results)
+        switches, total = _thong_ke_doan(ket_qua["segments"])
+        rows.append({
+            "quantum": q,
+            "avg_waiting": sum(r["waiting"] for r in results) / n,
+            "avg_turnaround": sum(r["turnaround"] for r in results) / n,
+            "avg_response": sum(r["response"] for r in results) / n,
+            "context_switches": switches,
+            "overhead_time": switches * context_switch,
+            "total_time": total,
+        })
+    return rows
+
+
 
 
 if __name__ == "__main__":
