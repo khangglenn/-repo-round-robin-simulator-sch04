@@ -10,6 +10,8 @@ SO_DOAN_MOI_HANG = 12
 TRUONG_KET_QUA = ["pid", "arrival", "burst", "completion",
                   "turnaround", "waiting", "response"]
 TRUONG_DOAN_CHAY = ["pid", "start", "end"]
+TRUONG_SO_SANH = ["quantum", "avg_waiting", "avg_turnaround", "avg_response",
+                  "context_switches", "overhead_time", "total_time"]
 
 
 def _so(x):
@@ -199,6 +201,47 @@ def xuat_trace(result, path):
     return _ghi_file(path, cac_dong)
 
 
+def xuat_bang_so_sanh(rows, path, context_switch=None):
+    if not isinstance(rows, (list, tuple)):
+        raise ValueError("Kết quả so sánh không hợp lệ: phải là danh sách các dòng.")
+    cac_dong_ss = _lay_danh_sach({"so sánh": rows}, "so sánh", TRUONG_SO_SANH)
+
+    tieu_de = ["Quantum", "Waiting TB", "Turnaround TB", "Response TB",
+               "Số lần đổi lượt", "Thời gian đổi lượt", "Giờ kết thúc"]
+    cac_hang = []
+    for d in cac_dong_ss:
+        cac_hang.append([_so(d["quantum"]), f"{d['avg_waiting']:.2f}",
+                         f"{d['avg_turnaround']:.2f}", f"{d['avg_response']:.2f}",
+                         _so(d["context_switches"]), _so(d["overhead_time"]),
+                         _so(d["total_time"])])
+
+    def tot_nhat(truong):
+        gia_tri = min(d[truong] for d in cac_dong_ss)
+        cac_q = [_so(d["quantum"]) for d in cac_dong_ss if d[truong] == gia_tri]
+        return f"{gia_tri:.2f} (quantum = {', '.join(cac_q)})"
+
+    thong_tin = {}
+    if context_switch is not None:
+        thong_tin["context_switch"] = context_switch
+    cac_dong = _phan_dau("BẢNG SO SÁNH CÁC QUANTUM - ROUND ROBIN", thong_tin)
+    cac_dong += [f"Số quantum được so sánh: {len(cac_dong_ss)}", ""]
+    cac_dong += _ke_bang(tieu_de, cac_hang, canh_trai=())
+    cac_dong += [
+        "",
+        "Nhận xét:",
+        f"  Waiting trung bình nhỏ nhất    : {tot_nhat('avg_waiting')}",
+        f"  Turnaround trung bình nhỏ nhất : {tot_nhat('avg_turnaround')}",
+        f"  Response trung bình nhỏ nhất   : {tot_nhat('avg_response')}",
+        "",
+        "Chú thích:",
+        "  TB                 = trung bình trên tất cả tiến trình",
+        "  Số lần đổi lượt    = số lần CPU chuyển từ tiến trình này sang tiến trình khác",
+        "  Thời gian đổi lượt = số lần đổi lượt x thời gian context switch",
+        "  Giờ kết thúc       = giờ kết thúc của đoạn chạy cuối cùng",
+    ]
+    return _ghi_file(path, cac_dong)
+
+
 def xuat_ket_qua(result, thu_muc="output", quantum=None, context_switch=None):
     if isinstance(result, dict):
         result = dict(result)
@@ -217,6 +260,10 @@ if __name__ == "__main__":
         from rr_engine import simulate_round_robin
     except ImportError:
         simulate_round_robin = None
+    try:
+        from rr_engine import compare_quanta
+    except ImportError:
+        compare_quanta = None
 
     vi_du_4_2 = [
         {"pid": "P1", "arrival": 0, "burst": 5},
@@ -236,6 +283,20 @@ if __name__ == "__main__":
         print("Đã ghi:", xuat_trace(kq_idle, os.path.join("output", "trace_idle.txt")))
     else:
         print("Chưa import được rr_engine.py, bỏ qua phần chạy với bộ não thật")
+
+    if simulate_round_robin and compare_quanta:
+        cac_quantum = [1, 2, 4, 8]
+        cs = 1
+        rows = compare_quanta(vi_du_4_2, cac_quantum, cs)
+        thu_muc_ss = os.path.join("output", "so_sanh")
+        print("Đã ghi:", xuat_bang_so_sanh(
+            rows, os.path.join(thu_muc_ss, "bang_so_sanh.txt"), context_switch=cs))
+        for q in cac_quantum:
+            kq = simulate_round_robin(vi_du_4_2, q, cs)
+            for p in xuat_ket_qua(kq, thu_muc_ss, quantum=q, context_switch=cs):
+                print("Đã ghi:", p)
+    else:
+        print("Chưa có compare_quanta trong rr_engine.py, bỏ qua phần so sánh")
 
     vi_du_cs_gia = {
         "quantum": 2,
