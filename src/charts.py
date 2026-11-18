@@ -14,6 +14,45 @@ def ve_bieu_do_so_sanh(rows, parent=None):
     else:
         root = tk.Toplevel() #tạo không gian vẽ khung
     root.title("Biểu đồ so sánh Round Robin.")
+    root.geometry("740x520") # cửa sổ nhỏ 
+    #Fix cho có thể cuộn chuột xem biểu đồ bên dưới
+    khung_ngoai = tk.Frame(root)
+    khung_ngoai.pack(fill="both", expand=True)
+
+    thanh_luot = tk.Scrollbar(khung_ngoai, orient="vertical")
+    thanh_luot.pack(side="right", fill="y")
+
+    vung_luot = tk.Canvas(khung_ngoai, yscrollcommand=thanh_luot.set)
+    vung_luot.pack(side="left", fill="both", expand=True)
+    thanh_luot.config(command=vung_luot.yview)
+
+    noi_dung = tk.Frame(vung_luot)
+    vung_luot.create_window((0, 0), window=noi_dung, anchor="nw", tags="cua_so_noi_dung")
+
+    def dieu_chinh_rong(event):
+        vung_luot.itemconfigure("cua_so_noi_dung", width=max(event.width, noi_dung.winfo_reqwidth()))
+    vung_luot.bind("<Configure>", dieu_chinh_rong)
+
+    
+    def cap_nhat_vung_luot(event):
+        #cập nhật vùng để lướt
+        vung_luot.configure(scrollregion=vung_luot.bbox("all"))
+    noi_dung.bind("<Configure>", cap_nhat_vung_luot)
+
+    def luot_bang_lan_chuot(event):
+        if event.delta == 0:
+            return
+        buoc = int(-1 * (event.delta / 120))
+        if buoc == 0: 
+            buoc = -1 if event.delta > 0 else 1
+        vung_luot.yview_scroll(buoc, "units")
+        return "break"
+    root.bind("<MouseWheel>", luot_bang_lan_chuot) #lan chuot tren Windows
+    root.bind("<Button-4>", lambda e: vung_luot.yview_scroll(-1, "units")) #lan chuot tren Linux
+    root.bind("<Button-5>", lambda e: vung_luot.yview_scroll(1, "units"))
+    vung_luot.bind("<MouseWheel>", luot_bang_lan_chuot)
+    noi_dung.bind("<MouseWheel>", luot_bang_lan_chuot)
+
 
     configs = [
         ("1. THỜI GIAN CHỜ TRUNG BÌNH THEO QUANTUM", "avg_waiting", "(Thời gian)", "#3498db", "bieu_do_cho.eps"),
@@ -24,8 +63,9 @@ def ve_bieu_do_so_sanh(rows, parent=None):
 
     for title, key, y_label, color, filename in configs:
         width, height = 700, 250
-        canvas = tk.Canvas(root, width=width, height=height, bg="white")
+        canvas = tk.Canvas(noi_dung, width=width, height=height, bg="white")
         canvas.pack()
+        canvas.bind("<MouseWheel>", luot_bang_lan_chuot)
 
         canvas.create_text(width / 2, 30, text=title, font=("Arial", 12, "bold")) #title
 
@@ -68,7 +108,9 @@ def ve_bieu_do_so_sanh(rows, parent=None):
         canvas.update()
         output_path = f"output/{filename}"
         canvas.postscript(file=output_path)
-        print(f"Đã xuất biểu đồ ra file: {output_path}") #xuất file về thư mục
+        print(f"Da xuat bieu do ra file: {output_path}") #xuất file về thư mục
+    noi_dung.update_idletasks()
+    vung_luot.configure(scrollregion=vung_luot.bbox("all"))
 
 if __name__ == "__main__":
     try:
